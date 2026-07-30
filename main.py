@@ -106,29 +106,30 @@ if not records:
 
 df = pd.DataFrame(records)
 df["date_str"] = df["date"].astype(str)
+df["audiCnt_k"] = df["audiCnt"] / 1000  # 그래프 표시용 천 명 단위
 
 # ---------------------------------------------------------------
-# 3) 일별 TOP5 변화 그래프 (바 차트 레이스)
+# 3) 일별 TOP5 변화 그래프 (바 차트 레이스, 단위: 천 명)
 # ---------------------------------------------------------------
 st.subheader(f"📊 {label(selected)} 일별 TOP5 변동 추세")
 
 fig = px.bar(
     df.sort_values(["date", "rank"]),
-    x="audiCnt",
+    x="audiCnt_k",
     y="movieNm",
     color="movieNm",
     orientation="h",
     animation_frame="date_str",
-    range_x=[0, df["audiCnt"].max() * 1.1],
-    labels={"audiCnt": "관객수", "movieNm": "영화명", "date_str": "날짜"},
-    text="audiCnt",
+    range_x=[0, df["audiCnt_k"].max() * 1.1],
+    labels={"audiCnt_k": "관객수(천 명)", "movieNm": "영화명", "date_str": "날짜"},
+    text="audiCnt_k",
 )
-fig.update_traces(texttemplate="%{text:,}", textposition="outside")
+fig.update_traces(texttemplate="%{text:,.0f}천", textposition="outside")
 fig.update_layout(
     yaxis={"categoryorder": "total ascending"},
     showlegend=False,
     height=550,
-    xaxis_title="관객수(명)",
+    xaxis_title="관객수(천 명)",
     yaxis_title="",
 )
 # 재생 속도를 조금 늦춰서 변화를 눈으로 따라가기 쉽게 한다
@@ -136,7 +137,8 @@ if fig.layout.updatemenus:
     fig.layout.updatemenus[0].buttons[0].args[1]["frame"]["duration"] = 600
 
 st.plotly_chart(fig, use_container_width=True)
-st.caption("▶ 버튼을 누르면 하루씩 순위가 바뀌는 과정을 애니메이션으로 볼 수 있습니다.")
+st.caption("▶ 버튼을 누르면 하루씩 순위가 바뀌는 과정을 애니메이션으로 볼 수 있습니다. (관객수 단위: 천 명)")
+
 
 # ---------------------------------------------------------------
 # 4) 일별 TOP1 영화 표 (영화 제목 · 관객수 · 개봉 날짜)
@@ -149,4 +151,8 @@ top1_table = (
     .copy()
 )
 top1_table.columns = ["날짜", "영화명", "관객수", "개봉일"]
+top1_table = top1_table.reset_index(drop=True)
+top1_table.index = top1_table.index + 1
+
+st.bar_chart(top1_table.set_index("날짜")["관객수"])
 st.dataframe(top1_table, use_container_width=True)
