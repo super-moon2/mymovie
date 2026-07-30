@@ -8,7 +8,7 @@ import streamlit as st
 from zoneinfo import ZoneInfo
 
 st.set_page_config(page_title="박스오피스 대시보드", layout="wide")
-st.title("🎬 월간 박스오피스 TOP5 변화")
+st.title("🎬 월별 TOP5 변동 추세")
 
 # 비밀 금고에서 인증키 꺼내기 (코드에는 키를 적지 않는다)
 KOBIS_KEY = st.secrets["KOBIS_KEY"]
@@ -89,6 +89,7 @@ for day in range(1, days_in_month + 1):
                         "rank": int(row["rank"]),
                         "movieNm": row["movieNm"],
                         "audiCnt": int(row["audiCnt"]),
+                        "openDt": row.get("openDt", ""),
                     }
                 )
     progress.progress(day / days_in_month, text=f"{day_date} 자료 불러오는 중...")
@@ -109,7 +110,7 @@ df["date_str"] = df["date"].astype(str)
 # ---------------------------------------------------------------
 # 3) 일별 TOP5 변화 그래프 (바 차트 레이스)
 # ---------------------------------------------------------------
-st.subheader(f"📊 {label(selected)} 일별 박스오피스 TOP5 변화")
+st.subheader(f"📊 {label(selected)} 일별 TOP5 변동 추세")
 
 fig = px.bar(
     df.sort_values(["date", "rank"]),
@@ -138,13 +139,14 @@ st.plotly_chart(fig, use_container_width=True)
 st.caption("▶ 버튼을 누르면 하루씩 순위가 바뀌는 과정을 애니메이션으로 볼 수 있습니다.")
 
 # ---------------------------------------------------------------
-# 4) 참고용 보조 그래프 · 표
+# 4) 일별 TOP1 영화 표 (영화 제목 · 관객수 · 개봉 날짜)
 # ---------------------------------------------------------------
-st.subheader("📈 일별 1위 영화 관객수 추이")
-top1_daily = df[df["rank"] == 1][["date", "movieNm", "audiCnt"]].sort_values("date")
-st.line_chart(top1_daily.set_index("date")["audiCnt"])
+st.subheader("📋 일별 TOP1 영화 정보")
 
-st.subheader("📋 일별 TOP5 원본 표")
-table = df.sort_values(["date", "rank"])[["date", "rank", "movieNm", "audiCnt"]].copy()
-table.columns = ["날짜", "순위", "영화명", "관객수"]
-st.dataframe(table, use_container_width=True)
+top1_table = (
+    df[df["rank"] == 1][["date", "movieNm", "audiCnt", "openDt"]]
+    .sort_values("date")
+    .copy()
+)
+top1_table.columns = ["날짜", "영화명", "관객수", "개봉일"]
+st.dataframe(top1_table, use_container_width=True)
